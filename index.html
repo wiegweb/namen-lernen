@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Namen lernen">
+<meta name="theme-color" content="#F4F6F9">
+<meta name="format-detection" content="telephone=no">
+<title>Namen lernen</title>
+<style>
+:root{
+  --paper:#F4F6F9;
+  --surface:#FFFFFF;
+  --ink:#121519;
+  --ink-2:#5B6474;
+  --ink-3:#8E97A6;
+  --line:#D8DEE7;
+  --fill:#E7EBF1;
+  --blue:#2B5FD9;
+  --blue-deep:#1E3F8A;
+  --blue-mid:#9DB6EE;
+  --blue-wash:#E9EFFB;
+  --green:#1B9E5A;
+  --green-wash:#E4F5EC;
+  --red:#D93B2E;
+  --red-wash:#FCEAE7;
+  --radius:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--paper);color:var(--ink);
+  font-size:16px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+button,input{font:inherit;color:inherit;margin:0}
+button{cursor:pointer}
+img{display:block}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+
+#app{max-width:720px;margin:0 auto;padding:0 16px calc(28px + env(safe-area-inset-bottom))}
+main{padding-top:4px}
+
+/* top bar */
+.top{
+  position:sticky;top:0;z-index:10;
+  display:flex;align-items:center;gap:10px;
+  padding:calc(10px + env(safe-area-inset-top)) 0 12px;
+  background:var(--paper);
+}
+.top h1{flex:1;margin:0;font-size:17px;font-weight:600;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{
+  width:40px;height:40px;flex:0 0 40px;border-radius:12px;
+  border:1px solid var(--line);background:var(--surface);
+  display:grid;place-items:center;padding:0;
+}
+.iconbtn.ghost{border-color:transparent;background:transparent;pointer-events:none}
+.iconbtn.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.iconbtn svg{width:20px;height:20px}
+.mark{width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center}
+.mark span{width:22px;height:22px;border-radius:7px;background:var(--blue);position:relative}
+.mark span::after{content:"";position:absolute;left:7px;top:5px;width:8px;height:8px;border-radius:50%;background:#fff}
+.mark span::before{content:"";position:absolute;left:4px;bottom:3px;width:14px;height:6px;border-radius:7px 7px 2px 2px;background:#fff}
+.playmeta{flex:1;display:flex;justify-content:center;gap:16px;font-weight:600;font-size:16px}
+.playmeta .score{color:var(--ink-2)}
+.clock{min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* text */
+h2{font-size:15px;font-weight:600;color:var(--ink-2);margin:26px 0 10px}
+.hint{font-size:14px;color:var(--ink-2);margin:12px 0 0}
+.link{border:0;background:none;padding:0;color:var(--blue);font-weight:600;font-size:15px}
+
+/* buttons */
+.btn{
+  min-height:48px;padding:0 18px;border-radius:12px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  font-weight:600;font-size:16px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  -webkit-user-select:none;user-select:none;
+}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:active{background:var(--blue-deep)}
+.btn.block{width:100%}
+.btn.big{min-height:54px;font-size:17px}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.yes{background:var(--green);border-color:var(--green);color:#fff}
+.btn.no{background:var(--red);border-color:var(--red);color:#fff}
+.row{display:flex;gap:10px;margin-top:14px}
+.row > .btn{flex:1}
+.row.stack{flex-direction:column;gap:10px}
+
+/* group list */
+.glist{display:grid;gap:10px;margin-bottom:16px}
+.gcard{
+  width:100%;text-align:left;padding:16px;
+  border-radius:18px;border:1px solid var(--line);background:var(--surface);
+  display:grid;gap:10px;
+}
+.gcard:active{background:var(--blue-wash)}
+.gcard-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.gname{font-size:19px;font-weight:600}
+.gcount{font-size:14px;color:var(--ink-2);white-space:nowrap}
+.gmeta{font-size:14px;color:var(--ink-2)}
+.empty{padding:28px 4px 20px;color:var(--ink-2);max-width:40ch}
+.empty-title{font-size:20px;font-weight:600;color:var(--ink);margin:0 0 6px}
+.empty p{margin:0}
+
+/* segmented person strip */
+.strip{display:flex;gap:3px;flex-wrap:wrap}
+.seg{flex:1 1 0;min-width:7px;max-width:24px;height:8px;border-radius:2px;background:var(--fill)}
+.seg.work{background:var(--blue-mid)}
+.seg.sure{background:var(--blue)}
+.seg.empty{max-width:none}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--ink-2);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .seg{flex:none;width:14px}
+
+/* tabs */
+.tabs{display:flex;gap:4px;padding:4px;background:var(--fill);border-radius:12px;margin:2px 0 18px}
+.tab{flex:1;min-height:40px;border:0;border-radius:9px;background:transparent;
+  font-weight:600;font-size:15px;color:var(--ink-2)}
+.tab.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(20,30,60,.10)}
+
+/* learn panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;font-weight:600}
+.modes{display:grid;gap:8px}
+.modecard{
+  text-align:left;padding:12px 14px;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--surface);display:grid;gap:2px;
+}
+.modecard.on{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue);background:var(--blue-wash)}
+.modename{font-weight:600;font-size:16px}
+.modedesc{font-size:14px;color:var(--ink-2)}
+.rowline{display:flex;justify-content:space-between;align-items:center;margin:20px 0 16px;font-weight:600}
+.segbtns{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.segbtn{min-width:52px;min-height:40px;border:0;background:transparent;font-weight:600;color:var(--ink-2)}
+.segbtn + .segbtn{border-left:1px solid var(--line)}
+.segbtn.on{background:var(--ink);color:#fff}
+
+/* people */
+.dropzone{border:1.5px dashed var(--line);border-radius:18px;padding:16px;margin-bottom:20px;background:var(--surface)}
+.dropzone.over{border-color:var(--blue);background:var(--blue-wash)}
+.dropzone .hint{margin-top:10px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+.person{padding:0;border:0;background:none;text-align:center;display:grid;gap:6px;color:var(--ink)}
+.face{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius);background:var(--fill)}
+.pname{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 4px}
+.person.hidden .pname{color:transparent;background:var(--fill);border-radius:6px}
+
+/* crop */
+.cropstage{position:relative;display:flex;justify-content:center;min-height:200px}
+.cropwrap{
+  position:relative;overflow:hidden;border-radius:var(--radius);background:#0f1420;
+  touch-action:none;-webkit-user-select:none;user-select:none;
+}
+.cropwrap canvas{display:block}
+.frame{
+  position:absolute;border:2px solid #fff;border-radius:6px;cursor:move;
+  box-shadow:0 0 0 9999px rgba(10,14,22,.58);
+}
+.frame::after{content:"";position:absolute;inset:8px;border:1px solid rgba(255,255,255,.4);border-radius:4px;pointer-events:none}
+.handle{
+  position:absolute;right:4px;bottom:4px;width:30px;height:30px;border-radius:50%;
+  background:var(--blue);border:2px solid #fff;cursor:nwse-resize;touch-action:none;
+}
+.cropload{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2);font-size:15px}
+.rangelabel{display:flex;align-items:center;gap:14px;margin:16px 0 6px;font-weight:600;font-size:15px}
+.rangelabel input{flex:1;accent-color:var(--blue);height:32px}
+.cropform{display:grid;gap:0;margin-top:8px}
+.input{
+  width:100%;min-height:50px;padding:0 14px;border-radius:12px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:17px;
+  -webkit-appearance:none;appearance:none;
+}
+.input.big{font-size:20px;min-height:56px;text-align:center}
+.input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 2px var(--blue-wash)}
+.input.shake{animation:shake .35s}
+
+/* play */
+.playmain{padding-top:8px}
+.hero{
+  width:min(72vw,300px);aspect-ratio:1;margin:6px auto 22px;border-radius:24px;overflow:hidden;
+  box-shadow:0 22px 44px -22px rgba(20,40,90,.45);
+}
+.hero img{width:100%;height:100%;object-fit:cover}
+.prompt{text-align:center;font-size:20px;margin:10px 0 20px}
+.prompt b{font-weight:700}
+.opts{display:grid;gap:10px}
+.opt{min-height:56px;font-size:19px;font-weight:600;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--surface);padding:0 14px}
+.opt.right{background:var(--green);border-color:var(--green);color:#fff}
+.opt.wrong{background:var(--red);border-color:var(--red);color:#fff}
+.opt:disabled{cursor:default}
+.facegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:480px;margin:0 auto}
+.facebtn{padding:0;border:2px solid transparent;border-radius:18px;background:none;color:var(--ink)}
+.facebtn .face{border-radius:15px}
+.facebtn.right{border-color:var(--green)}
+.facebtn.right .facename{color:var(--green)}
+.facebtn.wrong{border-color:var(--red)}
+.facebtn.wrong .face{opacity:.5}
+.facebtn.wrong .facename{color:var(--red)}
+.facename{display:block;min-height:26px;padding:5px 0 2px;font-weight:600;font-size:15px}
+.after{margin-top:16px}
+.feedback{text-align:center;font-size:22px;font-weight:700;line-height:1.3;padding:14px 16px;border-radius:14px;margin:4px 0 14px}
+.feedback b{font-weight:800}
+.feedback.good{background:var(--green-wash);color:var(--green)}
+.feedback.bad{background:var(--red-wash);color:var(--red)}
+.typeform{display:grid;gap:10px;max-width:420px;margin:0 auto}
+.matchfaces{display:grid;gap:8px;max-width:560px;margin:0 auto}
+.mface{padding:0;border:2px solid transparent;border-radius:14px;background:none;color:var(--ink)}
+.mface .face{border-radius:11px}
+.mface .facename{font-size:13px;min-height:22px;padding:3px 0 0}
+.mface.sel{border-color:var(--blue)}
+.mface.done{border-color:var(--green)}
+.mface.done .face{opacity:.6}
+.mface.done .facename{color:var(--green)}
+.matchnames{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.mname{min-height:46px;padding:0 18px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);font-size:17px;font-weight:600}
+.mname.sel{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue);color:var(--blue)}
+.mname.done{background:var(--green);border-color:var(--green);color:#fff}
+.mname:disabled{cursor:default}
+.bad{animation:shake .35s;border-color:var(--red) !important}
+.mname.bad{background:var(--red-wash);color:var(--red)}
+.cardarea{max-width:420px;margin:0 auto}
+.cardname{text-align:center;font-size:32px;font-weight:700;margin:6px 0 18px;letter-spacing:-.01em}
+
+/* result */
+.result{text-align:center;padding:26px 0 8px}
+.bignum{font-size:64px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--green)}
+.bignum .of{font-size:28px;color:var(--ink-3);font-weight:600;letter-spacing:0}
+.resulttext{color:var(--ink-2);margin:10px 0 0;font-size:17px}
+
+/* sheets, dialogs, toast */
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(15,20,30,.42);
+  display:flex;align-items:flex-end;justify-content:center}
+.sheet{
+  background:var(--surface);width:100%;max-width:560px;
+  border-radius:20px 20px 0 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));
+  display:grid;gap:6px;max-height:92vh;overflow:auto;
+}
+.sheet-title{font-weight:600;font-size:17px;padding:8px 4px 8px}
+.sheet-text{color:var(--ink-2);font-size:15px;padding:0 4px 8px}
+.sheet-text p{margin:0 0 10px}
+.sheet-item{width:100%;min-height:50px;border:0;border-radius:12px;background:var(--fill);
+  font-weight:600;font-size:16px;text-align:left;padding:0 16px;color:var(--ink)}
+.sheet-item.danger{color:var(--ink);background:#fff;border:1px solid var(--line)}
+.sheet-item.cancel{background:transparent;color:var(--ink-2);text-align:center;margin-top:4px}
+.sheet .input{margin:4px 0 4px}
+.toast{
+  position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:100;
+  transform:translate(-50%,16px);opacity:0;pointer-events:none;
+  background:var(--ink);color:#fff;padding:12px 16px;border-radius:12px;font-size:15px;font-weight:500;
+  max-width:calc(100% - 32px);transition:opacity .18s,transform .18s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media(min-width:560px){
+  .opts{grid-template-columns:1fr 1fr}
+  .modes{grid-template-columns:1fr 1fr}
+  .scrim{align-items:center;padding:16px}
+  .sheet{border-radius:20px;padding-bottom:14px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="filePhotos" class="vh" accept="image/*" multiple tabindex="-1">
+<input type="file" id="filePhoto" class="vh" accept="image/*" tabindex="-1">
+<input type="file" id="fileImport" class="vh" accept="application/json,.json" tabindex="-1">
+<script>
+(() => {
+'use strict';
+
+/* ---------- helpers ---------- */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const app = document.getElementById('app');
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const norm = s => String(s || '').toLowerCase().trim().replace(/ß/g, 'ss').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s\-]+/g, ' ');
+const byName = (a, b) => a.name.localeCompare(b.name, 'de');
+const plural = (n, one, many) => n === 1 ? `${n} ${one}` : `${n} ${many}`;
+function lev(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+const ICON = {
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeoff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.2 3.7"/><path d="M6.4 6.9C3.6 8.8 2 12 2 12s3.5 6 10 6c1.4 0 2.6-.3 3.7-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>'
+};
+
+/* ---------- storage (IndexedDB, local only) ---------- */
+let db = null, storageWarned = false;
+function openDB() {
+  return new Promise(res => {
+    let done = false; const finish = v => { if (!done) { done = true; res(v); } };
+    try {
+      if (!window.indexedDB) return finish(null);
+      const r = indexedDB.open('namen-lernen', 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore('groups', { keyPath: 'id' }); };
+      r.onsuccess = () => finish(r.result);
+      r.onerror = () => finish(null);
+      r.onblocked = () => finish(null);
+      setTimeout(() => finish(null), 4000);
+    } catch (e) { finish(null); }
+  });
+}
+function dbAll() {
+  return new Promise((res, rej) => {
+    if (!db) return res([]);
+    try { const q = db.transaction('groups', 'readonly').objectStore('groups').getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => rej(q.error); }
+    catch (e) { rej(e); }
+  });
+}
+function dbPut(g) {
+  return new Promise((res, rej) => {
+    if (!db) return rej(new Error('no db'));
+    try { const t = db.transaction('groups', 'readwrite'); t.objectStore('groups').put(g); t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }
+    catch (e) { rej(e); }
+  });
+}
+function dbDel(id) {
+  return new Promise((res, rej) => {
+    if (!db) return res();
+    try { const t = db.transaction('groups', 'readwrite'); t.objectStore('groups').delete(id); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }
+    catch (e) { rej(e); }
+  });
+}
+async function saveGroup(g) {
+  g.updated = Date.now();
+  try { await dbPut(g); }
+  catch (e) {
+    if (!storageWarned) { storageWarned = true; toast('Speichern nicht möglich – Änderungen gehen beim Schließen verloren. Exportiere zur Sicherheit.'); }
+  }
+}
+const prefs = (() => { try { return JSON.parse(localStorage.getItem('nl-prefs') || '{}'); } catch (e) { return {}; } })();
+function savePrefs() { try { localStorage.setItem('nl-prefs', JSON.stringify(prefs)); } catch (e) {} }
+
+/* ---------- state ---------- */
+const MODES = [
+  { id: 'mix',   name: 'Mix',            desc: 'Alle Formen außer Blitzrunde wechseln zufällig, nie zweimal dieselbe hintereinander.' },
+  { id: 'mc',    name: 'Gesicht → Name', desc: 'Ein Gesicht, vier Namen zur Auswahl.' },
+  { id: 'rev',   name: 'Name → Gesicht', desc: 'Ein Name, vier Gesichter zur Auswahl.' },
+  { id: 'type',  name: 'Eintippen',      desc: 'Namen frei eingeben, kleine Tippfehler zählen.' },
+  { id: 'match', name: 'Zuordnen',       desc: 'Fünf Gesichter, fünf Namen – Paare bilden.' },
+  { id: 'blitz', name: 'Blitzrunde',     desc: '60 Sekunden, so viele wie möglich.' },
+  { id: 'cards', name: 'Karten',         desc: 'Ansehen, aufdecken, selbst einschätzen.' }
+];
+const S = {
+  groups: [], view: 'home', gid: null, tab: 'learn',
+  mode: MODES.some(m => m.id === prefs.mode) ? prefs.mode : 'mix',
+  perRound: [8, 12, 20].includes(prefs.perRound) ? prefs.perRound : 12,
+  queue: [], qi: 0, replaceId: null, session: null, result: null, hideNames: false
+};
+const G = () => S.groups.find(g => g.id === S.gid);
+const newStats = () => ({ seen: 0, right: 0, wrong: 0, streak: 0, box: 0, last: 0 });
+const stateOf = s => s.stats.seen === 0 ? 'new' : (s.stats.box >= 3 ? 'sure' : 'work');
+function summary(g) {
+  const o = { n: g.students.length, sure: 0, work: 0, neu: 0 };
+  g.students.forEach(s => { const st = stateOf(s); if (st === 'sure') o.sure++; else if (st === 'work') o.work++; else o.neu++; });
+  return o;
+}
+function strip(g) {
+  if (!g.students.length) return '<div class="strip"><i class="seg empty"></i></div>';
+  return `<div class="strip">${g.students.slice().sort(byName).map(s => `<i class="seg ${stateOf(s)}"></i>`).join('')}</div>`;
+}
+
+/* ---------- UI primitives ---------- */
+function topbar({ back, title, right }) {
+  const left = back ? `<button class="iconbtn" data-act="${back}" aria-label="Zurück">${ICON.back}</button>` : '<div class="mark" aria-hidden="true"><span></span></div>';
+  return `<header class="top">${left}<h1>${esc(title)}</h1>${right || '<span class="iconbtn ghost"></span>'}</header>`;
+}
+function toast(msg) {
+  let t = $('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function sheet(title, items) {
+  const scrim = document.createElement('div'); scrim.className = 'scrim';
+  scrim.innerHTML = `<div class="sheet" role="dialog">${title ? `<div class="sheet-title">${esc(title)}</div>` : ''}
+    ${items.map((it, i) => `<button class="sheet-item ${it.danger ? 'danger' : ''}" data-i="${i}">${esc(it.label)}</button>`).join('')}
+    <button class="sheet-item cancel" data-i="-1">Abbrechen</button></div>`;
+  scrim.addEventListener('click', e => {
+    const b = e.target.closest('[data-i]');
+    if (b) { scrim.remove(); const i = +b.dataset.i; if (i >= 0) items[i].act(); }
+    else if (e.target === scrim) scrim.remove();
+  });
+  document.body.appendChild(scrim);
+}
+function infoSheet(title, html) {
+  const scrim = document.createElement('div'); scrim.className = 'scrim';
+  scrim.innerHTML = `<div class="sheet" role="dialog"><div class="sheet-title">${esc(title)}</div><div class="sheet-text">${html}</div><button class="btn primary block" data-c>Verstanden</button></div>`;
+  scrim.addEventListener('click', e => { if (e.target.closest('[data-c]') || e.target === scrim) scrim.remove(); });
+  document.body.appendChild(scrim);
+}
+function askText({ title, placeholder = '', value = '', ok = 'Speichern' }) {
+  return new Promise(res => {
+    const scrim = document.createElement('div'); scrim.className = 'scrim';
+    scrim.innerHTML = `<form class="sheet"><div class="sheet-title">${esc(title)}</div>
+      <input class="input" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="${esc(placeholder)}" value="${esc(value)}">
+      <div class="row"><button type="button" class="btn" data-c>Abbrechen</button><button type="submit" class="btn primary">${esc(ok)}</button></div></form>`;
+    const form = scrim.firstElementChild, input = $('input', form);
+    const done = v => { scrim.remove(); res(v); };
+    form.addEventListener('submit', e => { e.preventDefault(); const v = input.value.trim(); if (v) done(v); });
+    $('[data-c]', form).addEventListener('click', () => done(null));
+    scrim.addEventListener('click', e => { if (e.target === scrim) done(null); });
+    document.body.appendChild(scrim);
+    setTimeout(() => { input.focus(); input.select(); }, 40);
+  });
+}
+function confirmDlg({ title, text, ok = 'Löschen' }) {
+  return new Promise(res => {
+    const scrim = document.createElement('div'); scrim.className = 'scrim';
+    scrim.innerHTML = `<div class="sheet" role="dialog"><div class="sheet-title">${esc(title)}</div><div class="sheet-text">${esc(text)}</div>
+      <div class="row"><button class="btn" data-v="0">Abbrechen</button><button class="btn dark" data-v="1" style="background:var(--ink);border-color:var(--ink);color:#fff">${esc(ok)}</button></div></div>`;
+    scrim.addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { scrim.remove(); res(b.dataset.v === '1'); } else if (e.target === scrim) { scrim.remove(); res(false); } });
+    document.body.appendChild(scrim);
+  });
+}
+
+/* ---------- render ---------- */
+function render() {
+  if (S.view !== 'crop') cleanupCrop();
+  if (S.view !== 'play' && timer) { clearInterval(timer); timer = null; }
+  switch (S.view) {
+    case 'home': renderHome(); break;
+    case 'group': renderGroup(); break;
+    case 'crop': renderCrop(); break;
+    case 'play': renderPlay(); break;
+    case 'result': renderResult(); break;
+    case 'overview': renderOverview(); break;
+  }
+  window.scrollTo(0, 0);
+}
+
+function renderHome() {
+  const groups = S.groups.slice().sort((a, b) => (b.updated || b.created || 0) - (a.updated || a.created || 0));
+  const cards = groups.map(g => {
+    const s = summary(g);
+    return `<button class="gcard" data-act="openGroup" data-id="${g.id}">
+      <div class="gcard-head"><span class="gname">${esc(g.name)}</span><span class="gcount">${plural(s.n, 'Person', 'Personen')}</span></div>
+      ${strip(g)}
+      <div class="gmeta">${s.n ? `${s.sure} sicher, ${s.work} in Arbeit, ${s.neu} neu` : 'Noch keine Fotos'}</div>
+    </button>`;
+  }).join('');
+  app.innerHTML = topbar({ title: 'Namen lernen', right: `<button class="iconbtn" data-act="appMenu" aria-label="Mehr">${ICON.more}</button>` }) + `<main>
+    ${groups.length ? `<div class="glist">${cards}</div>` : `<div class="empty"><p class="empty-title">Noch keine Lerngruppe.</p><p>Lege eine Gruppe an, füge Fotos hinzu und schneide die Köpfe zu. Alle Daten bleiben auf diesem Gerät.</p></div>`}
+    <button class="btn primary block big" data-act="newGroup">Neue Lerngruppe anlegen</button>
+  </main>`;
+}
+
+function renderGroup() {
+  const g = G(); if (!g) { S.view = 'home'; return renderHome(); }
+  const s = summary(g);
+  const head = topbar({ back: 'home', title: g.name, right: `<button class="iconbtn" data-act="groupMenu" aria-label="Gruppe verwalten">${ICON.more}</button>` });
+  const tabs = `<nav class="tabs">
+    <button class="tab ${S.tab === 'learn' ? 'on' : ''}" data-act="tab" data-tab="learn">Lernen</button>
+    <button class="tab ${S.tab === 'people' ? 'on' : ''}" data-act="tab" data-tab="people">Personen${s.n ? ` (${s.n})` : ''}</button></nav>`;
+  let body;
+  if (S.tab === 'learn') {
+    const canPlay = s.n >= 2;
+    body = `<section class="panel">
+      <div class="panel-head"><span>${s.n ? `${s.sure} von ${s.n} sicher` : 'Noch keine Personen'}</span>${s.n ? '<button class="link" data-act="overview">Alle Gesichter</button>' : ''}</div>
+      ${strip(g)}
+      <div class="legend"><span><i class="seg sure"></i>sicher</span><span><i class="seg work"></i>in Arbeit</span><span><i class="seg"></i>neu</span></div>
+    </section>
+    <h2>Modus</h2>
+    <div class="modes">${MODES.map(m => `<button class="modecard ${S.mode === m.id ? 'on' : ''}" data-act="mode" data-mode="${m.id}"><span class="modename">${m.name}</span><span class="modedesc">${m.desc}</span></button>`).join('')}</div>
+    ${S.mode === 'blitz' ? '<div class="rowline"><span>Dauer</span><span style="color:var(--ink-2)">60 Sekunden</span></div>' :
+      `<div class="rowline"><span>Fragen pro Runde</span><div class="segbtns">${[8, 12, 20].map(n => `<button class="segbtn ${S.perRound === n ? 'on' : ''}" data-act="perRound" data-n="${n}">${n}</button>`).join('')}</div></div>`}
+    <button class="btn primary block big" data-act="start" ${canPlay ? '' : 'disabled'}>Runde starten</button>
+    ${canPlay ? '' : '<p class="hint">Mindestens zwei Personen mit Foto nötig. Füge unter „Personen“ Fotos hinzu.</p>'}`;
+  } else {
+    const people = g.students.slice().sort(byName).map(st =>
+      `<button class="person" data-act="editStudent" data-id="${st.id}"><img class="face" src="${st.img}" alt=""><span class="pname">${esc(st.name)}</span></button>`).join('');
+    body = `<div class="dropzone" id="dropzone">
+      <button class="btn primary block" data-act="addPhotos">Fotos hinzufügen</button>
+      <p class="hint">Ein oder mehrere Fotos auswählen, dann jeweils den Kopf zuschneiden und den Vornamen eintragen. Am Rechner kannst du Bilder auch hierher ziehen.</p>
+    </div>
+    ${people ? `<div class="pgrid">${people}</div>` : ''}`;
+  }
+  app.innerHTML = head + tabs + `<main>${body}</main>`;
+  if (S.tab === 'people') bindDrop();
+}
+
+function bindDrop() {
+  const z = $('#dropzone'); if (!z) return;
+  ['dragenter', 'dragover'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.remove('over'); }));
+  z.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) { S.replaceId = null; startCrop(e.dataTransfer.files); } });
+}
+
+/* ---------- crop ---------- */
+let crop = null, cropErr = null, cropTimer = null;
+function startCrop(files) {
+  const list = Array.from(files).filter(f => /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp|gif)$/i.test(f.name));
+  if (!list.length) { toast('Keine Bilddateien gefunden.'); return; }
+  S.queue = list; S.qi = 0; cropErr = null; S.view = 'crop'; render();
+}
+function renderCrop() {
+  const file = S.queue[S.qi];
+  if (!file) return finishCrop();
+  const g = G(); if (!g) return finishCrop();
+  const total = S.queue.length;
+  const replacing = S.replaceId ? g.students.find(s => s.id === S.replaceId) : null;
+  const err = cropErr && cropErr.file === file ? cropErr : null;
+  app.innerHTML = topbar({ title: total > 1 ? `Zuschneiden ${S.qi + 1} von ${total}` : 'Zuschneiden', right: `<button class="iconbtn" data-act="cancelCrop" aria-label="Abbrechen">${ICON.close}</button>` }) + `<main>${err ? `
+    <div class="empty" style="padding-top:32px"><p class="empty-title">„${esc(file.name)}“ lässt sich nicht öffnen</p><p>${esc(err.msg)}</p></div>
+    <div class="row stack" style="margin-top:6px">
+      <button class="btn primary block big" data-act="retryCrop">Erneut versuchen</button>
+      <button class="btn block" data-act="skipCrop">${total > 1 ? 'Überspringen und weiter' : 'Überspringen'}</button>
+    </div>` : `
+    <div class="cropstage"><div class="cropwrap" id="cropwrap"><canvas id="cropcanvas"></canvas><div class="frame" id="frame"><div class="handle" id="handle"></div></div></div><div class="cropload" id="cropload">Bild wird geladen …</div></div>
+    <label class="rangelabel">Ausschnitt <input type="range" id="sizeRange" min="15" max="100" value="60"></label>
+    <form id="cropform" class="cropform">
+      <input class="input" id="nameInput" type="text" placeholder="Vorname" autocomplete="off" autocorrect="off" autocapitalize="words" enterkeyhint="done" value="${replacing ? esc(replacing.name) : ''}" ${replacing ? 'readonly' : ''}>
+      <div class="row"><button type="button" class="btn" data-act="skipCrop">${replacing ? 'Abbrechen' : 'Überspringen'}</button><button type="submit" class="btn primary">${replacing ? 'Foto übernehmen' : 'Übernehmen'}</button></div>
+    </form>
+    <p class="hint">Rahmen verschieben durch Ziehen. Größe über den Regler oder den blauen Punkt. Ein Tipp auf das Bild setzt den Rahmen dorthin.</p>`}
+  </main>`;
+  if (err) return;
+  $('#cropform').addEventListener('submit', e => { e.preventDefault(); acceptCrop(); });
+  loadCropImage(file);
+}
+function showCropError(file, msg) {
+  cropErr = { file, msg };
+  if (S.queue[S.qi] === file) render();
+}
+function loadCropImage(file) {
+  cleanupCrop();
+  if (file.size === 0) { showCropError(file, 'Die Datei ist leer (0 Byte). Das kann vorkommen, wenn ein Foto nur in iCloud liegt und noch nicht vollständig auf das Gerät heruntergeladen wurde – öffne es einmal in der Fotos-App und versuche es dann erneut.'); return; }
+  const url = URL.createObjectURL(file), img = new Image();
+  let settled = false;
+  const finish = fn => { if (settled) return; settled = true; if (cropTimer) { clearTimeout(cropTimer); cropTimer = null; } fn(); };
+  img.onload = () => finish(() => { crop = { img, url }; layoutCrop(false); const l = $('#cropload'); if (l) l.style.display = 'none'; });
+  img.onerror = () => finish(() => { URL.revokeObjectURL(url); showCropError(file, `Das Bildformat (${file.type || 'unbekannt'}) konnte von diesem Browser nicht gelesen werden.`); });
+  cropTimer = setTimeout(() => finish(() => { URL.revokeObjectURL(url); showCropError(file, 'Das Laden dauert ungewöhnlich lange, möglicherweise weil das Foto erst aus iCloud geladen werden muss. Prüfe die Verbindung und versuche es erneut.'); }), 12000);
+  img.src = url;
+}
+function layoutCrop(keep) {
+  const wrap = $('#cropwrap'), canvas = $('#cropcanvas'); if (!wrap || !crop) return;
+  const prev = keep && crop.dw ? { fx: crop.x / crop.dw, fy: crop.y / crop.dh, fs: crop.s / Math.min(crop.dw, crop.dh) } : null;
+  const maxW = wrap.parentElement.clientWidth || 300;
+  const maxH = Math.max(220, Math.min(window.innerHeight * 0.5, 620));
+  const nw = crop.img.naturalWidth || 1, nh = crop.img.naturalHeight || 1;
+  const k = Math.min(maxW / nw, maxH / nh);
+  const dw = Math.max(1, Math.round(nw * k)), dh = Math.max(1, Math.round(nh * k));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(dw * dpr); canvas.height = Math.round(dh * dpr);
+  canvas.style.width = dw + 'px'; canvas.style.height = dh + 'px';
+  wrap.style.width = dw + 'px'; wrap.style.height = dh + 'px';
+  canvas.getContext('2d').drawImage(crop.img, 0, 0, canvas.width, canvas.height);
+  crop.dw = dw; crop.dh = dh; crop.k = k;
+  const m = Math.min(dw, dh);
+  if (prev) { crop.s = prev.fs * m; crop.x = prev.fx * dw; crop.y = prev.fy * dh; }
+  else { crop.s = Math.round(m * 0.6); crop.x = Math.round((dw - crop.s) / 2); crop.y = Math.round(Math.max(0, (dh - crop.s) * 0.3)); }
+  const r = $('#sizeRange'); if (r) r.value = Math.round(crop.s / m * 100);
+  placeFrame(); bindCropEvents();
+}
+function placeFrame() {
+  const f = $('#frame'); if (!f || !crop) return;
+  const m = Math.min(crop.dw, crop.dh);
+  crop.s = Math.max(40, Math.min(crop.s, m));
+  crop.x = Math.max(0, Math.min(crop.x, crop.dw - crop.s));
+  crop.y = Math.max(0, Math.min(crop.y, crop.dh - crop.s));
+  f.style.left = crop.x + 'px'; f.style.top = crop.y + 'px'; f.style.width = crop.s + 'px'; f.style.height = crop.s + 'px';
+}
+function bindCropEvents() {
+  const wrap = $('#cropwrap'), frame = $('#frame'), handle = $('#handle'), range = $('#sizeRange');
+  if (!wrap || wrap.dataset.bound) return; wrap.dataset.bound = '1';
+  let drag = null;
+  const pos = e => { const r = wrap.getBoundingClientRect(); return { px: e.clientX - r.left, py: e.clientY - r.top }; };
+  wrap.addEventListener('pointerdown', e => {
+    if (!crop) return; e.preventDefault();
+    const { px, py } = pos(e);
+    if (e.target === handle) drag = { type: 'resize' };
+    else if (e.target === frame) drag = { type: 'move', ox: px - crop.x, oy: py - crop.y };
+    else { crop.x = px - crop.s / 2; crop.y = py - crop.s / 2; placeFrame(); drag = { type: 'move', ox: px - crop.x, oy: py - crop.y }; }
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!drag || !crop) return; e.preventDefault();
+    const { px, py } = pos(e);
+    if (drag.type === 'move') { crop.x = px - drag.ox; crop.y = py - drag.oy; }
+    else { crop.s = Math.min(Math.max(px - crop.x, py - crop.y), crop.dw - crop.x, crop.dh - crop.y); range.value = Math.round(Math.max(40, crop.s) / Math.min(crop.dw, crop.dh) * 100); }
+    placeFrame();
+  });
+  const end = () => { drag = null; };
+  wrap.addEventListener('pointerup', end); wrap.addEventListener('pointercancel', end);
+  range.addEventListener('input', () => {
+    if (!crop) return;
+    const m = Math.min(crop.dw, crop.dh), cx = crop.x + crop.s / 2, cy = crop.y + crop.s / 2;
+    crop.s = Math.round(m * range.value / 100); crop.x = cx - crop.s / 2; crop.y = cy - crop.s / 2; placeFrame();
+  });
+}
+async function acceptCrop() {
+  if (!crop) return;
+  const g = G(); if (!g) return finishCrop();
+  const input = $('#nameInput'); const name = input.value.trim();
+  if (!S.replaceId && !name) { input.classList.add('shake'); setTimeout(() => input.classList.remove('shake'), 400); input.focus(); return; }
+  const N = 288, out = document.createElement('canvas'); out.width = N; out.height = N;
+  const sx = crop.x / crop.k, sy = crop.y / crop.k, ss = crop.s / crop.k;
+  out.getContext('2d').drawImage(crop.img, sx, sy, ss, ss, 0, 0, N, N);
+  let data;
+  try { data = out.toDataURL('image/jpeg', 0.85); } catch (e) { toast('Das Bild konnte nicht verarbeitet werden.'); return; }
+  if (S.replaceId) { const st = g.students.find(s => s.id === S.replaceId); if (st) st.img = data; S.replaceId = null; }
+  else g.students.push({ id: uid(), name, img: data, stats: newStats() });
+  await saveGroup(g);
+  S.qi++;
+  if (S.qi >= S.queue.length) finishCrop(); else render();
+}
+function finishCrop() {
+  cleanupCrop(); S.queue = []; S.qi = 0; S.replaceId = null; cropErr = null;
+  S.view = 'group'; S.tab = 'people'; render();
+}
+function cleanupCrop() {
+  if (crop && crop.url) URL.revokeObjectURL(crop.url); crop = null;
+  if (cropTimer) { clearTimeout(cropTimer); cropTimer = null; }
+}
+
+/* ---------- game ---------- */
+let timer = null;
+function startSession() {
+  const g = G(); if (!g || g.students.length < 2) return;
+  const blitz = S.mode === 'blitz';
+  S.session = { mode: S.mode, total: blitz ? Infinity : S.perRound, i: 0, right: 0, wrong: 0, missed: new Set(), lastId: null, endAt: blitz ? Date.now() + 60000 : null, q: null, done: false };
+  S.view = 'play'; nextQuestion();
+}
+function weightOf(st) { const s = st.stats; return (s.seen === 0 ? 4 : 1) + (4 - Math.min(4, s.box)) * 1.2 + (s.wrong > s.right ? 1.5 : 0); }
+function pickWeighted(pool) {
+  let total = 0; const ws = pool.map(s => { const w = weightOf(s); total += w; return w; });
+  let r = Math.random() * total;
+  for (let i = 0; i < pool.length; i++) { r -= ws[i]; if (r <= 0) return pool[i]; }
+  return pool[pool.length - 1];
+}
+function pickTarget() {
+  const g = G(); const pool = g.students.filter(s => s.id !== S.session.lastId);
+  return pickWeighted(pool.length ? pool : g.students);
+}
+function distractors(target, k) {
+  const g = G(), used = new Set([norm(target.name)]), out = [];
+  for (const s of shuffle(g.students)) {
+    if (s.id === target.id) continue;
+    const n = norm(s.name); if (used.has(n)) continue;
+    used.add(n); out.push(s); if (out.length >= k) break;
+  }
+  return out;
+}
+function pickQType() {
+  const m = S.session.mode, n = G().students.length;
+  if (m === 'mix') {
+    const pool = ['mc', 'rev', 'type', 'cards'];
+    if (n >= 3) pool.push('match');
+    const choices = pool.filter(t => t !== S.session.lastType);
+    const t = choices[Math.floor(Math.random() * choices.length)];
+    S.session.lastType = t;
+    return t;
+  }
+  if (m === 'blitz') return 'mc';
+  if (m === 'match' && n < 3) return 'mc';
+  return m;
+}
+function nextQuestion() {
+  const ses = S.session; if (!ses || ses.done) return;
+  if (ses.i >= ses.total || (ses.endAt && Date.now() >= ses.endAt)) return endSession();
+  const type = pickQType(), t = pickTarget(); ses.lastId = t.id;
+  const q = { type, target: t, answered: false };
+  if (type === 'mc' || type === 'rev') q.options = shuffle([t, ...distractors(t, 3)]);
+  else if (type === 'match') {
+    const k = Math.min(5, G().students.length), chosen = [t, ...distractors(t, k - 1)];
+    q.faces = shuffle(chosen); q.names = shuffle(chosen); q.locked = new Set(); q.selFace = null; q.selName = null; q.mistakes = 0;
+  }
+  ses.q = q; renderPlay();
+}
+function fmtClock() { const ses = S.session; if (!ses || !ses.endAt) return ''; return Math.max(0, Math.ceil((ses.endAt - Date.now()) / 1000)) + ' s'; }
+function renderPlay() {
+  const ses = S.session; if (!ses || !ses.q) { S.view = 'group'; return renderGroup(); }
+  const q = ses.q;
+  const progress = ses.endAt ? `<span class="clock" id="clock">${fmtClock()}</span>` : `<span>${ses.i + 1} / ${ses.total}</span>`;
+  const head = `<header class="top"><button class="iconbtn" data-act="quitPlay" aria-label="Runde beenden">${ICON.close}</button><div class="playmeta">${progress}<span class="score">${ses.right} richtig</span></div><span class="iconbtn ghost"></span></header>`;
+  let body = '';
+  if (q.type === 'mc') {
+    body = `<div class="hero"><img src="${q.target.img}" alt=""></div>
+      <div class="opts">${q.options.map(o => `<button class="opt" data-act="answerMC" data-id="${o.id}">${esc(o.name)}</button>`).join('')}</div><div class="after" id="after"></div>`;
+  } else if (q.type === 'rev') {
+    body = `<div class="prompt">Wer ist <b>${esc(q.target.name)}</b>?</div>
+      <div class="facegrid">${q.options.map(o => `<button class="facebtn" data-act="answerRev" data-id="${o.id}"><img class="face" src="${o.img}" alt=""><span class="facename"></span></button>`).join('')}</div><div class="after" id="after"></div>`;
+  } else if (q.type === 'type') {
+    body = `<div class="hero"><img src="${q.target.img}" alt=""></div>
+      <form id="typeform" class="typeform"><input class="input big" id="typeInput" type="text" placeholder="Vorname" autocomplete="off" autocorrect="off" autocapitalize="words" enterkeyhint="go"><button type="submit" class="btn primary big">Prüfen</button></form><div class="after" id="after"></div>`;
+  } else if (q.type === 'match') {
+    body = `<div class="prompt">Erst ein Gesicht antippen, dann den passenden Namen.</div>
+      <div class="matchfaces" style="grid-template-columns:repeat(${q.faces.length},1fr)">${q.faces.map(o => `<button class="mface" data-act="matchFace" data-id="${o.id}"><img class="face" src="${o.img}" alt=""><span class="facename"></span></button>`).join('')}</div>
+      <div class="matchnames">${q.names.map(o => `<button class="mname" data-act="matchName" data-id="${o.id}">${esc(o.name)}</button>`).join('')}</div><div class="after" id="after"></div>`;
+  } else if (q.type === 'cards') {
+    body = `<div class="hero"><img src="${q.target.img}" alt=""></div>
+      <div class="cardarea" id="cardarea"><button class="btn block big" data-act="reveal">Namen aufdecken</button></div>`;
+  }
+  app.innerHTML = head + `<main class="playmain">${body}</main>`;
+  if (q.type === 'type') {
+    $('#typeform').addEventListener('submit', e => { e.preventDefault(); answerType(); });
+    setTimeout(() => { const i = $('#typeInput'); if (i) i.focus(); }, 30);
+  }
+  if (ses.endAt && !timer) {
+    timer = setInterval(() => {
+      const c = $('#clock'); if (c) c.textContent = fmtClock();
+      if (Date.now() >= ses.endAt) { clearInterval(timer); timer = null; if (!ses.done) endSession(); }
+    }, 250);
+  }
+}
+function mark(st, ok) {
+  const s = st.stats; s.seen++; s.last = Date.now();
+  if (ok) { s.right++; s.streak++; s.box = Math.min(5, s.box + 1); }
+  else { s.wrong++; s.streak = 0; s.box = Math.max(0, s.box - 1); S.session.missed.add(st.id); }
+}
+function tally(ok) { const ses = S.session; ok ? ses.right++ : ses.wrong++; ses.i++; const sc = $('.score'); if (sc) sc.textContent = `${ses.right} richtig`; }
+function showFeedback(ok, html, withNext) {
+  const a = $('#after'); if (!a) return;
+  a.innerHTML = `<div class="feedback ${ok ? 'good' : 'bad'}">${html}</div>${withNext ? '<button class="btn primary block big" data-act="next" id="nextBtn">Weiter</button>' : ''}`;
+}
+function finishQ(ok, html) {
+  const ses = S.session;
+  showFeedback(ok, html, !ok && !ses.endAt);
+  if (ses.endAt) { setTimeout(nextQuestion, ok ? 500 : 1300); return; }
+  if (ok) setTimeout(nextQuestion, 850);
+}
+async function answerMC(el) {
+  const ses = S.session, q = ses.q; if (!q || q.answered) return; q.answered = true;
+  const id = el.dataset.id, ok = id === q.target.id;
+  $$('.opt').forEach(b => { b.disabled = true; if (b.dataset.id === q.target.id) b.classList.add('right'); else if (b.dataset.id === id) b.classList.add('wrong'); });
+  mark(q.target, ok); tally(ok); await saveGroup(G());
+  finishQ(ok, ok ? 'Richtig!' : `Falsch – das ist <b>${esc(q.target.name)}</b>.`);
+}
+async function answerRev(el) {
+  const ses = S.session, q = ses.q; if (!q || q.answered) return; q.answered = true;
+  const id = el.dataset.id, ok = id === q.target.id;
+  $$('.facebtn').forEach(b => {
+    b.disabled = true; const o = q.options.find(x => x.id === b.dataset.id);
+    $('.facename', b).textContent = o ? o.name : '';
+    if (b.dataset.id === q.target.id) b.classList.add('right'); else if (b.dataset.id === id) b.classList.add('wrong');
+  });
+  mark(q.target, ok); tally(ok); await saveGroup(G());
+  finishQ(ok, ok ? 'Richtig!' : `Falsch – <b>${esc(q.target.name)}</b> ist grün markiert.`);
+}
+function fuzzyMatch(input, target, allStudents) {
+  const a = norm(input), b = norm(target.name);
+  if (!a) return false;
+  if (a === b) return true;
+  if (allStudents.some(s => s.id !== target.id && norm(s.name) === a)) return false;
+  const parts = b.split(' ').filter(Boolean);
+  if (parts.length > 1 && parts.includes(a)) return true;
+  const tol = b.length >= 8 ? 2 : (b.length >= 4 ? 1 : 0);
+  return lev(a, b) <= tol;
+}
+async function answerType() {
+  const ses = S.session, q = ses.q; if (!q || q.answered) return;
+  const input = $('#typeInput'), val = input.value.trim(); if (!val) return;
+  q.answered = true; input.disabled = true; const sb = $('#typeform button'); if (sb) sb.disabled = true;
+  const ok = fuzzyMatch(val, q.target, G().students);
+  mark(q.target, ok); tally(ok); await saveGroup(G());
+  const exact = norm(val) === norm(q.target.name);
+  const msg = ok ? (exact ? 'Richtig!' : `Richtig – geschrieben wird es <b>${esc(q.target.name)}</b>.`) : `Falsch – das ist <b>${esc(q.target.name)}</b>.`;
+  showFeedback(ok, msg, true);
+  setTimeout(() => { const b = $('#nextBtn'); if (b) b.focus(); }, 20);
+}
+function refreshMatchSel() {
+  const q = S.session.q;
+  $$('.mface').forEach(b => b.classList.toggle('sel', b.dataset.id === q.selFace));
+  $$('.mname').forEach(b => b.classList.toggle('sel', b.dataset.id === q.selName));
+}
+function matchFace(el) { const q = S.session.q; const id = el.dataset.id; if (q.locked.has(id)) return; q.selFace = q.selFace === id ? null : id; refreshMatchSel(); tryPair(); }
+function matchName(el) { const q = S.session.q; const id = el.dataset.id; if (q.locked.has(id)) return; q.selName = q.selName === id ? null : id; refreshMatchSel(); tryPair(); }
+async function tryPair() {
+  const ses = S.session, q = ses.q; if (!q.selFace || !q.selName) return;
+  const fid = q.selFace, nid = q.selName; q.selFace = q.selName = null;
+  const face = $(`.mface[data-id="${fid}"]`), name = $(`.mname[data-id="${nid}"]`), st = q.faces.find(o => o.id === fid);
+  if (!face || !name || !st) return;
+  if (fid === nid) {
+    q.locked.add(fid); mark(st, true);
+    face.classList.remove('sel'); face.classList.add('done'); face.disabled = true; $('.facename', face).textContent = st.name;
+    name.classList.remove('sel'); name.classList.add('done'); name.disabled = true;
+    if (q.locked.size === q.faces.length) {
+      tally(q.mistakes === 0); await saveGroup(G());
+      if (q.mistakes === 0) { showFeedback(true, 'Alle richtig!', false); setTimeout(nextQuestion, 850); }
+      else showFeedback(false, `${esc(plural(q.mistakes, 'Fehlversuch', 'Fehlversuche'))} – die betroffenen Personen kommen bald wieder.`, true);
+    }
+  } else {
+    q.mistakes++; mark(st, false);
+    face.classList.remove('sel'); name.classList.remove('sel'); face.classList.add('bad'); name.classList.add('bad');
+    setTimeout(() => { face.classList.remove('bad'); name.classList.remove('bad'); }, 450);
+  }
+}
+function reveal() {
+  const q = S.session.q; if (!q || q.answered) return; q.answered = true;
+  $('#cardarea').innerHTML = `<div class="cardname">${esc(q.target.name)}</div><div class="row"><button class="btn big no" data-act="selfNo">Wusste ich nicht</button><button class="btn big yes" data-act="selfYes">Wusste ich</button></div>`;
+}
+async function selfAnswer(ok) {
+  const ses = S.session, q = ses.q; if (!q) return;
+  mark(q.target, ok); tally(ok); await saveGroup(G()); nextQuestion();
+}
+function endSession() {
+  const ses = S.session; if (!ses || ses.done) return; ses.done = true;
+  if (timer) { clearInterval(timer); timer = null; }
+  S.result = { mode: ses.mode, right: ses.right, wrong: ses.wrong, missed: Array.from(ses.missed) };
+  S.session = null; S.view = 'result'; render();
+}
+function renderResult() {
+  const r = S.result, g = G(); if (!r || !g) { S.view = 'group'; return renderGroup(); }
+  const total = r.right + r.wrong, pct = total ? Math.round(r.right / total * 100) : 0;
+  const missed = r.missed.map(id => g.students.find(s => s.id === id)).filter(Boolean).sort(byName);
+  app.innerHTML = topbar({ title: 'Runde beendet' }) + `<main>
+    <div class="result"><div class="bignum">${r.right}<span class="of"> / ${total}</span></div>
+    <p class="resulttext">${total ? `${pct} % richtig${r.mode === 'blitz' ? ' in 60 Sekunden' : ''}.` : 'Keine Frage beantwortet.'}</p></div>
+    ${missed.length ? `<h2>Noch einmal ansehen</h2><div class="pgrid">${missed.map(s => `<div class="person"><img class="face" src="${s.img}" alt=""><span class="pname">${esc(s.name)}</span></div>`).join('')}</div>` : (total ? '<p class="hint" style="text-align:center">Alles richtig – nichts zum Nachlernen.</p>' : '')}
+    <div class="row stack" style="margin-top:26px"><button class="btn primary block big" data-act="start">Noch eine Runde</button><button class="btn block" data-act="backToGroup">Zur Gruppe</button></div>
+  </main>`;
+}
+function renderOverview() {
+  const g = G(); if (!g) { S.view = 'home'; return renderHome(); }
+  const list = g.students.slice().sort(byName);
+  app.innerHTML = topbar({ back: 'backToGroup', title: 'Alle Gesichter', right: `<button class="iconbtn ${S.hideNames ? 'on' : ''}" data-act="toggleNames" aria-label="Namen verdecken">${S.hideNames ? ICON.eyeoff : ICON.eye}</button>` }) + `<main>
+    <p class="hint" style="margin:0 0 16px">${S.hideNames ? 'Namen verdeckt – tippe ein Gesicht, um den Namen einzeln zu zeigen.' : 'Alphabetisch sortiert. Mit dem Augensymbol verdeckst du alle Namen zum Selbsttest.'}</p>
+    <div class="pgrid">${list.map(s => `<button class="person ${S.hideNames ? 'hidden' : ''}" data-act="peek"><img class="face" src="${s.img}" alt=""><span class="pname">${esc(s.name)}</span></button>`).join('')}</div>
+  </main>`;
+}
+
+/* ---------- export / import ---------- */
+function download(filename, text) {
+  const blob = new Blob([text], { type: 'application/json' }), url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.rel = 'noopener';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
+}
+function exportGroups(groups, label) {
+  const payload = { app: 'namen-lernen', version: 1, exported: new Date().toISOString(), groups };
+  const safe = label.replace(/[^\wäöüÄÖÜß-]+/g, '-').replace(/^-+|-+$/g, '') || 'export';
+  download(`namen-lernen-${safe}-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(payload));
+  toast('Datei wird gespeichert.');
+}
+async function importFile(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    const groups = Array.isArray(data) ? data : (data && Array.isArray(data.groups) ? data.groups : []);
+    let added = 0, updated = 0;
+    for (const raw of groups) {
+      if (!raw || !Array.isArray(raw.students)) continue;
+      const g = {
+        id: String(raw.id || uid()), name: String(raw.name || 'Importierte Gruppe').slice(0, 80),
+        created: Number(raw.created) || Date.now(), updated: Date.now(),
+        students: raw.students.filter(s => s && typeof s.img === 'string' && /^data:image\//.test(s.img) && s.name)
+          .map(s => ({ id: String(s.id || uid()), name: String(s.name).slice(0, 60), img: s.img, stats: Object.assign(newStats(), s.stats || {}) }))
+      };
+      const idx = S.groups.findIndex(x => x.id === g.id);
+      if (idx >= 0) { S.groups[idx] = g; updated++; } else { S.groups.push(g); added++; }
+      await saveGroup(g);
+    }
+    if (!added && !updated) toast('Keine Lerngruppen in dieser Datei gefunden.');
+    else toast(`${plural(added, 'Gruppe', 'Gruppen')} hinzugefügt${updated ? `, ${updated} aktualisiert` : ''}.`);
+    S.view = 'home'; render();
+  } catch (e) { toast('Die Datei konnte nicht gelesen werden.'); }
+}
+
+/* ---------- actions ---------- */
+const actions = {
+  home() { S.gid = null; S.view = 'home'; render(); },
+  openGroup(el) { S.gid = el.dataset.id; S.tab = 'learn'; S.view = 'group'; render(); },
+  async newGroup() {
+    const name = await askText({ title: 'Neue Lerngruppe', placeholder: 'z. B. 7b oder Deutsch LK', ok: 'Anlegen' });
+    if (!name) return;
+    const g = { id: uid(), name, created: Date.now(), students: [] };
+    S.groups.push(g); await saveGroup(g);
+    S.gid = g.id; S.tab = 'people'; S.view = 'group'; render();
+  },
+  tab(el) { S.tab = el.dataset.tab; render(); },
+  mode(el) { S.mode = el.dataset.mode; prefs.mode = S.mode; savePrefs(); render(); },
+  perRound(el) { S.perRound = +el.dataset.n; prefs.perRound = S.perRound; savePrefs(); render(); },
+  start() { startSession(); },
+  overview() { S.hideNames = false; S.view = 'overview'; render(); },
+  toggleNames() { S.hideNames = !S.hideNames; render(); },
+  peek(el) { if (S.hideNames) el.classList.toggle('hidden'); },
+  backToGroup() { S.view = 'group'; render(); },
+  addPhotos() { S.replaceId = null; $('#filePhotos').click(); },
+  skipCrop() { cropErr = null; if (S.replaceId) return finishCrop(); S.qi++; if (S.qi >= S.queue.length) finishCrop(); else render(); },
+  retryCrop() { cropErr = null; render(); },
+  cancelCrop() { finishCrop(); },
+  answerMC(el) { answerMC(el); },
+  answerRev(el) { answerRev(el); },
+  matchFace(el) { matchFace(el); },
+  matchName(el) { matchName(el); },
+  reveal() { reveal(); },
+  selfYes() { selfAnswer(true); },
+  selfNo() { selfAnswer(false); },
+  next() { nextQuestion(); },
+  quitPlay() { const ses = S.session; if (ses && (ses.right + ses.wrong) > 0) endSession(); else { S.session = null; if (timer) { clearInterval(timer); timer = null; } S.view = 'group'; render(); } },
+  editStudent(el) {
+    const g = G(); const st = g.students.find(x => x.id === el.dataset.id); if (!st) return;
+    sheet(st.name, [
+      { label: 'Vornamen ändern', act: async () => { const n = await askText({ title: 'Vornamen ändern', value: st.name }); if (n) { st.name = n; await saveGroup(g); render(); } } },
+      { label: 'Foto ersetzen', act: () => { S.replaceId = st.id; $('#filePhoto').click(); } },
+      { label: 'Lernstand zurücksetzen', act: async () => { st.stats = newStats(); await saveGroup(g); render(); toast(`Lernstand von ${st.name} zurückgesetzt.`); } },
+      { label: 'Person entfernen', danger: true, act: async () => {
+        if (await confirmDlg({ title: `${st.name} entfernen?`, text: 'Foto und Lernstand dieser Person werden von diesem Gerät gelöscht.', ok: 'Entfernen' })) {
+          g.students = g.students.filter(x => x.id !== st.id); await saveGroup(g); render();
+        } } }
+    ]);
+  },
+  groupMenu() {
+    const g = G(); if (!g) return;
+    sheet(g.name, [
+      { label: 'Gruppe umbenennen', act: async () => { const n = await askText({ title: 'Gruppe umbenennen', value: g.name }); if (n) { g.name = n; await saveGroup(g); render(); } } },
+      { label: 'Gruppe exportieren', act: () => exportGroups([g], g.name) },
+      { label: 'Lernstand der Gruppe zurücksetzen', act: async () => {
+        if (await confirmDlg({ title: 'Lernstand zurücksetzen?', text: 'Alle Personen gelten wieder als neu. Fotos und Namen bleiben erhalten.', ok: 'Zurücksetzen' })) {
+          g.students.forEach(s => s.stats = newStats()); await saveGroup(g); render();
+        } } },
+      { label: 'Gruppe löschen', danger: true, act: async () => {
+        if (await confirmDlg({ title: `„${g.name}“ löschen?`, text: `${plural(g.students.length, 'Person', 'Personen')} mit Fotos und Lernstand werden von diesem Gerät gelöscht.` })) {
+          S.groups = S.groups.filter(x => x.id !== g.id);
+          try { await dbDel(g.id); } catch (e) {}
+          S.gid = null; S.view = 'home'; render();
+        } } }
+    ]);
+  },
+  appMenu() {
+    sheet(null, [
+      { label: 'Alle Gruppen exportieren', act: () => { if (!S.groups.length) return toast('Es gibt noch nichts zu exportieren.'); exportGroups(S.groups, 'alle'); } },
+      { label: 'Aus Datei importieren', act: () => $('#fileImport').click() },
+      { label: 'Hinweise zu Daten und Speicherung', act: () => infoSheet('Daten und Speicherung', `
+        <p>Fotos und Namen werden ausschließlich im Speicher dieses Browsers auf diesem Gerät abgelegt. Es gibt keinen Server, nichts wird übertragen.</p>
+        <p>Der Browserspeicher ist nicht dauerhaft garantiert: Beim Löschen der Website-Daten oder – je nach Gerät – nach längerer Nichtnutzung kann er geleert werden. Exportiere deshalb regelmäßig eine Sicherung und lösche Gruppen, die du nicht mehr brauchst.</p>
+        <p>Auf iPhone und iPad kannst du die Seite über „Teilen“ zum Home-Bildschirm hinzufügen; sie startet dann wie eine App.</p>`) }
+    ]);
+  }
+};
+
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const fn = actions[el.dataset.act]; if (fn) fn(el, e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || S.view !== 'play') return;
+  const b = $('#nextBtn'); const tag = document.activeElement && document.activeElement.tagName;
+  if (b && tag !== 'INPUT') { e.preventDefault(); b.click(); }
+});
+$('#filePhotos').addEventListener('change', e => { if (e.target.files.length) startCrop(e.target.files); e.target.value = ''; });
+$('#filePhoto').addEventListener('change', e => { if (e.target.files.length) startCrop(e.target.files); else S.replaceId = null; e.target.value = ''; });
+$('#fileImport').addEventListener('change', e => { if (e.target.files.length) importFile(e.target.files[0]); e.target.value = ''; });
+let rz = null;
+window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.view === 'crop' && crop) layoutCrop(true); }, 120); });
+
+/* ---------- init ---------- */
+(async function init() {
+  db = await openDB();
+  try { S.groups = await dbAll(); } catch (e) { S.groups = []; }
+  if (!db) storageWarned = false;
+  S.groups.forEach(g => { g.students = Array.isArray(g.students) ? g.students : []; g.students.forEach(s => s.stats = Object.assign(newStats(), s.stats || {})); });
+  render();
+  if (!db) toast('Dauerhaftes Speichern ist in diesem Browser nicht möglich – nutze den Export.');
+})();
+})();
+</script>
+</body>
+</html>
